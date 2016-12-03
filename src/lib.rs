@@ -16,24 +16,30 @@ named!(property,
                     || {}
                 ))));
 
-named!(key_value<&[u8], (&[u8], &[u8])>,
+named!(key_value<&[u8], Line>,
        do_parse!(key: property >>
                  tag!(" = ") >>
                  value: alt!(
                      quoted |
                      not_line_ending
                  ) >>
-                 (key, value)));
+                 (KeyValue(to_string(key), to_string(value)))));
 
-named!(line<&[u8], (&[u8], &[u8])>, ws!(key_value));
+named!(line<&[u8], Line>, ws!(key_value));
 
-named!(parse<&[u8], Vec<(&[u8], &[u8])> >, many0!(line));
+named!(parse<&[u8], Vec<Line> >, many0!(line));
 
 fn to_string(bytes: &[u8]) -> String {
     from_utf8(bytes)
         .expect("Managed to parse but failed to convert non-utf8")
         .to_string()
 }
+
+#[derive(Debug)]
+enum Line {
+    KeyValue(String, String),
+}
+use Line::*;
 
 #[derive(Debug)]
 pub struct Config {
@@ -50,19 +56,19 @@ impl FromStr for Config {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key_value_bytes = try!(get_byte_pairs(s));
-        let key_value_pairs = key_value_bytes.iter()
-            .map(|&(key, value)| (to_string(key), to_string(value)));
+        let lines = try!(get_lines(s));
 
         let mut map = HashMap::new();
-        for (key, value) in key_value_pairs {
-            map.insert(key, value);
+        for line in lines {
+            match line {
+                KeyValue(key, value) => map.insert(key, value),
+            };
         }
         Ok(Config { map: map })
     }
 }
 
-fn get_byte_pairs(s: &str) -> Result<Vec<(&[u8], &[u8])>, ParseError> {
+fn get_lines(s: &str) -> Result<Vec<Line>, ParseError> {
     let parsed = parse(s.as_bytes());
     match parsed.remaining_input() {
         Some(bytes) if (bytes.len() != 0) => return Err(Syntax),
