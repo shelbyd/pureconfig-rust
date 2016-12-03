@@ -66,3 +66,11 @@ fn bare_words_until_end_of_line() {
     let config: Config = "hostname = dynamo is bae".parse().unwrap();
     assert_eq!(config.get("hostname"), Some("dynamo is bae"));
 }
+
+#[test]
+fn quoted_word_with_stuff_after() {
+    assert_eq!("host..name = \"dynamo\"great".parse::<Config>().unwrap_err(),
+               ParseError::Syntax);
+    assert_eq!("host..name = \"dynamo\" great".parse::<Config>().unwrap_err(),
+               ParseError::Syntax);
+}
