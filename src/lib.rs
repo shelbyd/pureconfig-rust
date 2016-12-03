@@ -3,7 +3,7 @@ use std::str::{FromStr, from_utf8};
 #[macro_use]
 extern crate nom;
 
-use nom::{alpha, GetInput};
+use nom::{alpha, not_line_ending, GetInput};
 use std::collections::HashMap;
 
 named!(quoted,
@@ -19,7 +19,10 @@ named!(property,
 named!(key_value<&[u8], (&[u8], &[u8])>,
        do_parse!(key: property >>
                  tag!(" = ") >>
-                 value: quoted >>
+                 value: alt!(
+                     quoted |
+                     not_line_ending
+                 ) >>
                  (key, value)));
 
 named!(line<&[u8], (&[u8], &[u8])>, ws!(key_value));

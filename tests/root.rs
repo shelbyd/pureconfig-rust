@@ -47,3 +47,22 @@ fn root_level_property_with_many_dots_together() {
     assert_eq!("host..name = \"dynamo\"".parse::<Config>().unwrap_err(),
                ParseError::Syntax);
 }
+
+#[test]
+fn bare_words() {
+    let config: Config = "hostname = dynamo".parse().unwrap();
+    assert_eq!(config.get("hostname"), Some("dynamo"));
+}
+
+#[test]
+fn multiline_bare_words() {
+    let config: Config = "hostname = dynamo\nport = 5153\npath = /foo/bar".parse().unwrap();
+    assert_eq!(config.get("hostname"), Some("dynamo"));
+    assert_eq!(config.get("path"), Some("/foo/bar"));
+}
+
+#[test]
+fn bare_words_until_end_of_line() {
+    let config: Config = "hostname = dynamo is bae".parse().unwrap();
+    assert_eq!(config.get("hostname"), Some("dynamo is bae"));
+}
