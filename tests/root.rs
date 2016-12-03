@@ -1,7 +1,11 @@
 extern crate pureconfig;
 
 use pureconfig::Config;
-use pureconfig::ParseError;
+
+fn assert_syntax_error(contents: &str) {
+    assert_eq!(contents.parse::<Config>().unwrap_err(),
+               pureconfig::ParseError::Syntax);
+}
 
 #[test]
 fn root_level_empty() {
@@ -25,27 +29,23 @@ fn root_level_three_properties() {
 
 #[test]
 fn just_a_word() {
-    assert_eq!("hostname".parse::<Config>().unwrap_err(),
-               ParseError::Syntax);
+    assert_syntax_error("hostname");
 }
 
 #[test]
 fn word_and_equals() {
-    assert_eq!("hostname = ".parse::<Config>().unwrap_err(),
-               ParseError::Syntax);
+    assert_syntax_error("hostname = ");
 }
 
 #[test]
 fn root_level_property_with_dots() {
     let config: Config = "host.name = \"dynamo\"".parse().unwrap();
-    println!("config: {:?}", config);
     assert_eq!(config.get("host.name"), Some("dynamo"));
 }
 
 #[test]
 fn root_level_property_with_many_dots_together() {
-    assert_eq!("host..name = \"dynamo\"".parse::<Config>().unwrap_err(),
-               ParseError::Syntax);
+    assert_syntax_error("host..name = \"dynamo\"");
 }
 
 #[test]
@@ -69,8 +69,6 @@ fn bare_words_until_end_of_line() {
 
 #[test]
 fn quoted_word_with_stuff_after() {
-    assert_eq!("host..name = \"dynamo\"great".parse::<Config>().unwrap_err(),
-               ParseError::Syntax);
-    assert_eq!("host..name = \"dynamo\" great".parse::<Config>().unwrap_err(),
-               ParseError::Syntax);
+    assert_syntax_error("host..name = \"dynamo\"great");
+    assert_syntax_error("host..name = \"dynamo\" great");
 }
