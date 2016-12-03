@@ -3,14 +3,21 @@ use std::str::{FromStr, from_utf8};
 #[macro_use]
 extern crate nom;
 
-use nom::alpha;
+use nom::{alpha, GetInput};
 use std::collections::HashMap;
 
 named!(quoted,
        delimited!(tag!("\""), take_until!("\""), tag!("\"")));
 
+named!(property,
+       recognize!(many1!(chain!(
+                    alpha ~
+                    opt!(tag!(".")),
+                    || {}
+                ))));
+
 named!(key_value<&[u8], (&[u8], &[u8])>,
-       do_parse!(key: alpha >>
+       do_parse!(key: property >>
                  tag!(" = ") >>
                  value: quoted >>
                  (key, value)));
@@ -40,9 +47,8 @@ impl FromStr for Config {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parsed = parse(s.as_bytes());
-        let bytes = try!(parsed.to_full_result());
-        let key_value_pairs = bytes.iter()
+        let key_value_bytes = try!(get_byte_pairs(s));
+        let key_value_pairs = key_value_bytes.iter()
             .map(|&(key, value)| (to_string(key), to_string(value)));
 
         let mut map = HashMap::new();
@@ -51,6 +57,15 @@ impl FromStr for Config {
         }
         Ok(Config { map: map })
     }
+}
+
+fn get_byte_pairs(s: &str) -> Result<Vec<(&[u8], &[u8])>, ParseError> {
+    let parsed = parse(s.as_bytes());
+    match parsed.remaining_input() {
+        Some(bytes) if (bytes.len() != 0) => return Err(Syntax),
+        _ => {}
+    }
+    parsed.to_full_result().map_err(::std::convert::From::from)
 }
 
 #[derive(Debug, PartialEq)]

@@ -34,3 +34,16 @@ fn word_and_equals() {
     assert_eq!("hostname = ".parse::<Config>().unwrap_err(),
                ParseError::Syntax);
 }
+
+#[test]
+fn root_level_property_with_dots() {
+    let config: Config = "host.name = \"dynamo\"".parse().unwrap();
+    println!("config: {:?}", config);
+    assert_eq!(config.get("host.name"), Some("dynamo"));
+}
+
+#[test]
+fn root_level_property_with_many_dots_together() {
+    assert_eq!("host..name = \"dynamo\"".parse::<Config>().unwrap_err(),
+               ParseError::Syntax);
+}
