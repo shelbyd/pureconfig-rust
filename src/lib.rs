@@ -9,12 +9,7 @@ use std::collections::HashMap;
 named!(quoted,
        delimited!(tag!("\""), take_until!("\""), tag!("\"")));
 
-named!(property,
-       recognize!(many1!(chain!(
-                    alpha ~
-                    opt!(tag!(".")),
-                    || {}
-                ))));
+named!(property, take_until!(" = "));
 
 named!(key_value<&[u8], Line>,
        do_parse!(key: property >>

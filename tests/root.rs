@@ -44,6 +44,13 @@ fn root_level_property_with_dots() {
 }
 
 #[test]
+fn root_level_property_with_underscores() {
+    let config: Config = "host_name = \"dynamo\"".parse().unwrap();
+    assert_eq!(config.get("host_name"), Some("dynamo"));
+}
+
+#[test]
+#[ignore]
 fn root_level_property_with_many_dots_together() {
     assert_syntax_error("host..name = \"dynamo\"");
 }
@@ -69,6 +76,6 @@ fn bare_words_until_end_of_line() {
 
 #[test]
 fn quoted_word_with_stuff_after() {
-    assert_syntax_error("host..name = \"dynamo\"great");
-    assert_syntax_error("host..name = \"dynamo\" great");
+    assert_syntax_error("hostname = \"dynamo\"great");
+    assert_syntax_error("hostname = \"dynamo\" great");
 }
