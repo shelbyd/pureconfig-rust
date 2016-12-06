@@ -1,17 +1,22 @@
 use std::str::from_utf8;
-use nom::{not_line_ending, GetInput};
+use nom::{line_ending, newline, not_line_ending, GetInput, IResult};
 
 named!(quoted,
        delimited!(tag!("\""), take_until!("\""), tag!("\"")));
 
+named!(quote_and_done,
+       alt!(terminated!(quoted, eof!()) | terminated!(quoted, line_ending)));
+
 named!(property, take_until!(" = "));
+
+named!(bare_key, preceded!(not!(tag!("\"")), not_line_ending));
 
 named!(key_value<&[u8], Line>,
        do_parse!(key: property >>
                  tag!(" = ") >>
                  value: alt!(
-                     quoted |
-                     not_line_ending
+                     quote_and_done |
+                     bare_key
                  ) >>
                  (KeyValue(to_string(key), to_string(value)))));
 
@@ -177,6 +182,21 @@ mod tests {
             Line::Comment(" Just a comment.".to_string()),
         ];
         assert_eq!(get_lines("# Just a comment.").unwrap(), result);
+    }
+
+    #[test]
+    fn comment_after_bare_words() {
+        let result = vec![
+            key_value("hostname", "dynamo # This isn't actually a comment."),
+        ];
+        assert_eq!(
+            get_lines("hostname = dynamo # This isn't actually a comment.").unwrap(),
+            result);
+    }
+
+    #[test]
+    fn comment_after_quote() {
+        assert_syntax_error("hostname = \"dynamo\" # This isn't actually a comment.");
     }
 
     #[test]
