@@ -15,13 +15,21 @@ named!(key_value<&[u8], Line>,
                  ) >>
                  (KeyValue(to_string(key), to_string(value)))));
 
-named!(line<&[u8], Line>, ws!(key_value));
+named!(comment<&[u8], Line>,
+       do_parse!(
+           content: preceded!(tag!("#"), not_line_ending) >>
+           (Comment(to_string(content)))));
+
+named!(line<&[u8], Line>, alt!(
+        ws!(key_value) |
+        ws!(comment)));
 
 named!(parse<&[u8], Vec<Line> >, many0!(line));
 
 #[derive(Debug, PartialEq)]
 pub enum Line {
     KeyValue(String, String),
+    Comment(String),
 }
 use self::Line::*;
 
@@ -161,6 +169,14 @@ mod tests {
             key_value("hostname", "dynamo is bae"),
         ];
         assert_eq!(get_lines("hostname = dynamo is bae").unwrap(), result);
+    }
+
+    #[test]
+    fn comments() {
+        let result = vec![
+            Line::Comment(" Just a comment.".to_string()),
+        ];
+        assert_eq!(get_lines("# Just a comment.").unwrap(), result);
     }
 
     #[test]

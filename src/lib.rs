@@ -30,6 +30,7 @@ impl FromStr for Config {
         for line in lines {
             match line {
                 Line::KeyValue(key, value) => map.insert(key, value),
+                Line::Comment(_) => panic!(),
             };
         }
         Ok(Config { map: map })
