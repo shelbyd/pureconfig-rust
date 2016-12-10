@@ -1,22 +1,22 @@
 use std::str::from_utf8;
-use nom::{line_ending, newline, not_line_ending, GetInput, IResult};
+use nom::{line_ending, not_line_ending, GetInput};
 
 named!(quoted,
        delimited!(tag!("\""), take_until!("\""), tag!("\"")));
 
 named!(quote_and_done,
-       alt!(terminated!(quoted, eof!()) | terminated!(quoted, line_ending)));
+       terminated!(quoted, alt!(eof!() | line_ending)));
 
 named!(property, take_until!(" = "));
 
-named!(bare_key, preceded!(not!(tag!("\"")), not_line_ending));
+named!(bare_value, preceded!(not!(tag!("\"")), not_line_ending));
 
 named!(key_value<&[u8], Line>,
        do_parse!(key: property >>
                  tag!(" = ") >>
                  value: alt!(
                      quote_and_done |
-                     bare_key
+                     bare_value
                  ) >>
                  (KeyValue(to_string(key), to_string(value)))));
 
